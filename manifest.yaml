@@ -1,0 +1,7 @@
+applications:
+  - name: joyfultweets
+    buildpacks: 
+      - nodejs_buildpack
+    command: "node server.js"
+    disk_quota: 512M
+    memory: 256M

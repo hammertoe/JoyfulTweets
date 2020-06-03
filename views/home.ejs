@@ -1,0 +1,75 @@
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+    <script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <link href='https://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
+    <meta name="monetization" content="$ilp.uphold.com/DBQHhyEb8myw">
+    <style>
+      h1 {
+	  font: 400 130px/0.8 'Cookie', Helvetica, sans-serif;
+	  color: black;
+	  text-shadow: 4px 4px 3px rgba(0,0,0,0.1); 
+	  padding-left: 10px;
+	  padding-top: 20px;
+      }
+
+      .twitter-tweet { margin: 0 !important; }
+      
+      .border {
+
+	  display: block;
+	  overflow: auto;
+	  float: left;
+	  margin: 10px;
+      }
+
+      .one { border: 20px solid #B29DD9; }
+      .two { border: 20px solid #FDFD98; }
+      .three { border: 20px solid #FE6B64; }
+      .four { border: 20px solid #77DD77; }
+      .five { border: 20px solid #779ECB; }
+
+    </style>
+    
+  </head>
+  
+  <body>
+
+    <h1>Joyful Tweets</h1>
+
+    <div id="fetching"><p>Fetching tweets...</p></div>
+    <div id="container" class="grid">
+         <!-- tweets go in here -->
+    </div>
+
+    <script>
+      $(document).ready(function() {
+          $.getJSON("https://joyfultweets-daring-wildebeest-eq.eu-gb.mybluemix.net/tweets", data => {
+	      let i = 0;
+	      let colours = ['one', 'two', 'three', 'four', 'five'];
+              data.tweets.forEach(tweet => {
+		  let colour = colours[i % colours.length];
+		  let url = `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`;
+		  i++;
+		  console.log("tweet: ", url)
+		  $("#container").append(`<div class="grid-item border ${colour}"><blockquote class="twitter-tweet"><a href="${url}"></blockquote></div>`)
+              })
+          }).then(() => {
+              return twttr.widgets.load(
+		  $("#container")
+	      );
+	  }).then(() => {
+	      return $("#fetching").hide();
+	  }).then(() => {
+	      return $('.grid').masonry({
+		  // options
+		  itemSelector: '.grid-item',
+		  columnWidth: 560
+	      });
+          })
+      })
+      </script>
+    
+  </body>
+</html>
