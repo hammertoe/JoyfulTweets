@@ -107,66 +107,66 @@ app.get('/profile',
   });
 
 app.get('/tweets',
-	require('connect-ensure-login').ensureLoggedIn(),
-	function(req, res) {
+        require('connect-ensure-login').ensureLoggedIn(),
+        function(req, res) {
 
-	    var T = new Twit({
-		consumer_key: process.env['TWITTER_CONSUMER_KEY'],
-		consumer_secret: process.env['TWITTER_CONSUMER_SECRET'],
-		access_token: req.user.token,
-		access_token_secret: req.user.tokenSecret,
-		timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
-		strictSSL:            true,     // optional - requires SSL certificates to be valid.
-	    })
+            var T = new Twit({
+                consumer_key: process.env['TWITTER_CONSUMER_KEY'],
+                consumer_secret: process.env['TWITTER_CONSUMER_SECRET'],
+                access_token: req.user.token,
+                access_token_secret: req.user.tokenSecret,
+                timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
+                strictSSL:            true,     // optional - requires SSL certificates to be valid.
+            })
 
-	    T.get('statuses/home_timeline', { count: 20,
-					      tweet_mode: 'extended' },
-		  async (err, data, response) => {
+            T.get('statuses/home_timeline', { count: 20,
+                                              tweet_mode: 'extended' },
+                  async (err, data, response) => {
 
-		      const agent = axios.create({
-			  timeout: 1000,
-			  auth: {username: 'apikey',
-				 password: tone_key},
-			  adapter: throttleAdapterEnhancer(axios.defaults.adapter, { threshold: 1000 })
-		      });
+                      const agent = axios.create({
+                          timeout: 1000,
+                          auth: {username: 'apikey',
+                                 password: tone_key},
+                          adapter: throttleAdapterEnhancer(axios.defaults.adapter, { threshold: 1000 })
+                      });
 
-		      let tweets = await Promise.all(data.map(async tweet => {
-			  let status = tweet.retweeted_status || tweet;
-			  let text = status.full_text;
+                      let tweets = await Promise.all(data.map(async tweet => {
+                          let status = tweet.retweeted_status || tweet;
+                          let text = status.full_text;
 
-			  // connect to tone analyser
-			  try {
-			      let tones = await agent.post(tone_url, {text: text});
-			      tweet.tones = tones.data.document_tone.tones;
-			  } catch (error) {
-			      console.error(error);
-			  }
-			  return tweet;
-		      }))
-		      
-		      let joy_tweets = tweets.filter(tweet => {
-			  if (tweet.tones) {
-			      for (let i=0; i<tweet.tones.length; i++) {
-				  if(tweet.tones[i].tone_id == 'anger') {
-				      return false;
-				  }
-				  if(tweet.user.protected) {
-				      return false;
-				  }
-				  
-			      }
-			      for (let i=0; i<tweet.tones.length; i++) {
-				  if(tweet.tones[i].tone_id == 'joy') {
-				      return true;
-				  }
-			      }
-			  }
-		      })
-		      
-		      res.json({'tweets': joy_tweets});
-		  })
+                          // connect to tone analyser
+                          try {
+                              let tones = await agent.post(tone_url, {text: text});
+                              tweet.tones = tones.data.document_tone.tones;
+                          } catch (error) {
+                              console.error(error);
+                          }
+                          return tweet;
+                      }))
+                      
+                      let joy_tweets = tweets.filter(tweet => {
+                          if (tweet.tones) {
+                              for (let i=0; i<tweet.tones.length; i++) {
+                                  if(tweet.tones[i].tone_id == 'anger') {
+                                      return false;
+                                  }
+                                  if(tweet.user.protected) {
+                                      return false;
+                                  }
+                                  
+                              }
+                              for (let i=0; i<tweet.tones.length; i++) {
+                                  if(tweet.tones[i].tone_id == 'joy') {
+                                      return true;
+                                  }
+                              }
+                          }
+                      })
+                      
+                      res.json({'tweets': joy_tweets});
+                  })
 
-	});
-	    
+        });
+            
 
 app.listen(process.env['PORT'] || 8080);
