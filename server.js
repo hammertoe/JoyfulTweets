@@ -7,8 +7,7 @@ var Twit = require('twit');
 var axios = require('axios');
 var throttleAdapterEnhancer = require('axios-extensions').throttleAdapterEnhancer;
 
-tone_url = process.env['TONE_URL'] + '/v3/tone?version=2017-09-21';
-tone_key = process.env['TONE_KEY'];
+tone_url = process.env['TONE_URL'];
 
 // Configure the Twitter strategy for use by Passport.
 //
@@ -119,54 +118,58 @@ app.get('/tweets',
                 strictSSL:            true,     // optional - requires SSL certificates to be valid.
             })
 
-            T.get('statuses/home_timeline', { count: 20,
+	    // Fetch the tweets
+            T.get('statuses/home_timeline', { count: 50,
                                               tweet_mode: 'extended' },
-                  async (err, data, response) => {
+                  async (err, tweets, response) => {
 
+		      // create an agent to contact our tone service
                       const agent = axios.create({
-                          timeout: 1000,
-                          auth: {username: 'apikey',
-                                 password: tone_key},
-                          adapter: throttleAdapterEnhancer(axios.defaults.adapter, { threshold: 1000 })
+                          timeout: 5000,
                       });
 
-                      let tweets = await Promise.all(data.map(async tweet => {
-                          let status = tweet.retweeted_status || tweet;
+		      // get the actual full texts for teach tweet
+		      let texts = tweets.map(tweet => {
+			  let status = tweet.retweeted_status || tweet;
                           let text = status.full_text;
 
-                          // connect to tone analyser
-                          try {
-                              let tones = await agent.post(tone_url, {text: text});
-                              tweet.tones = tones.data.document_tone.tones;
-                          } catch (error) {
-                              console.error(error);
+			  return text;
+		      });
+
+		      // POST to our tone analyser service
+		      try {
+                          let resp = await agent.post(tone_url, {texts: texts});
+			  let tones = resp.data.tones;
+			  console.log(tones);
+
+			  for (i=0; i < tweets.length; i++) {
+			      tweets[i].tones = tones[i];
+			  }
+                      } catch (error) {
+                          console.error(error);
+                      }
+
+
+		      // Filter just the tweets that are joyful
+		      let joy_tweets = tweets.filter(tweet => {
+			  if(tweet.user.protected) {
+                              return false;
                           }
-                          return tweet;
-                      }))
-                      
-                      let joy_tweets = tweets.filter(tweet => {
+
                           if (tweet.tones) {
-                              for (let i=0; i<tweet.tones.length; i++) {
-                                  if(tweet.tones[i].tone_id == 'anger') {
-                                      return false;
-                                  }
-                                  if(tweet.user.protected) {
-                                      return false;
-                                  }
-                                  
-                              }
-                              for (let i=0; i<tweet.tones.length; i++) {
-                                  if(tweet.tones[i].tone_id == 'joy') {
-                                      return true;
-                                  }
-                              }
-                          }
-                      })
-                      
+			      if (tweet.tones.anger > 0.5) {
+				  return false;
+			      }
+
+			      if (tweet.tones.joy > 0.7) {
+				  return true;
+			      }
+			  }
+
+			  return false;
+		      });
                       res.json({'tweets': joy_tweets});
                   })
-
         });
-            
 
 app.listen(process.env['PORT'] || 8080);
