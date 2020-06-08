@@ -120,6 +120,7 @@ app.get('/tweets',
 
 	    // Fetch the tweets
             T.get('statuses/home_timeline', { count: 50,
+					      since_id: req.query.since_id,
                                               tweet_mode: 'extended' },
                   async (err, tweets, response) => {
 

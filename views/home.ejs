@@ -44,32 +44,56 @@
     </div>
 
     <script>
-      $(document).ready(function() {
-          $.getJSON("https://joyfultweets-daring-wildebeest-eq.eu-gb.mybluemix.net/tweets", data => {
-	      let i = 0;
-	      let colours = ['one', 'two', 'three', 'four', 'five'];
-              data.tweets.forEach(tweet => {
-		  let colour = colours[i % colours.length];
-		  let url = `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`;
-		  i++;
-		  console.log("tweet: ", url)
-		  $("#container").append(`<div class="grid-item border ${colour}"><blockquote class="twitter-tweet"><a href="${url}"></blockquote></div>`)
-              })
-          }).then(() => {
-              return twttr.widgets.load(
-		  $("#container")
-	      );
-	  }).then(() => {
-	      return $("#fetching").hide();
-	  }).then(() => {
-	      return $('.grid').masonry({
-		  // options
-		  itemSelector: '.grid-item',
-		  columnWidth: 560
-	      });
-          })
-      })
-      </script>
-    
+
+    let colors = ['one', 'two', 'three', 'four', 'five'];
+    let color_idx = 0;
+
+    function fetch_tweets(since_id) {
+	let url = "https://joyfultweets-daring-wildebeest-eq.eu-gb.mybluemix.net/tweets";
+	if (since_id) {
+	    url += `?since_id=${since_id}`
+	}
+	console.log(`Fetching tweets:  ${url}`);
+        $.getJSON(url, data => {
+	    console.log(`Got ${data.tweets.length} tweets`);
+            data.tweets.reverse().forEach(tweet => {
+		let url = `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`;
+		since_id = tweet.id_str;
+		console.log("tweet: ", url)
+		$("#container").prepend(`<div class="grid-item border ${colors[color_idx]}"><blockquote class="twitter-tweet"><a href="${url}"></blockquote></div>`)
+
+		// increment the color
+		color_idx++;
+		if (color_idx >= colors.length) {
+		    color_idx = 0;
+		}
+		
+		// remove excess ones from end
+		let children = $("#container").children()
+		let num = children.length;
+		if(num > 30) {
+		    children.slice(30 - num).remove();
+		}
+            })
+        }).then(() => {
+            return twttr.widgets.load($("#container"));
+	}).then(() => {
+	    return $("#fetching").hide();
+	}).then(() => {
+	    return $('.grid').masonry({
+		// options
+		itemSelector: '.grid-item',
+		columnWidth: 560
+	    }).masonry('reloadItems');
+        }).then(() => {
+	    setTimeout(() => { fetch_tweets(since_id) }, 60*1000);
+	});
+    }
+
+    $(document).ready(() => {
+ 	fetch_tweets();
+    })
+
+    </script>    
   </body>
 </html>
