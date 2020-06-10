@@ -45,13 +45,14 @@
 
     <script>
 
-    let colors = ['one', 'two', 'three', 'four', 'five'];
-    let color_idx = 0;
-
     var $grid = $('.grid').masonry({
 	itemSelector: '.grid-item',
-	columnWidth: 610
+	columnWidth: 610,
+	initLayout: false
     });
+
+    let colors = ['one', 'two', 'three', 'four', 'five'];
+    let color_idx = 0;
 
     function fetch_tweets(since_id) {
 	let url = "https://joyfultweets-daring-wildebeest-eq.eu-gb.mybluemix.net/tweets";
@@ -99,7 +100,12 @@
 	    event.widgets.forEach(function (widget) {
 		console.log("Created widget", widget.id);
 	    });
-	    $grid.masonry( 'prepended', event.widgets );
+
+	    // if we have any widgets then force a relayout
+	    if (event.widgets.length) {
+		console.log("relayout");
+		$grid.masonry('reloadItems').masonry();
+	    }
 	}
     );
 
