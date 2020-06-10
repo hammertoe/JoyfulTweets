@@ -104,9 +104,10 @@
 	    // if we have any widgets then force a relayout
 	    if (event.widgets.length) {
 		console.log("relayout");
+		$grid.masonry('reloadItems').masonry();
 		setTimeout(() => {
-		    $grid.masonry('reloadItems').masonry();
-		    console.log("layout done")
+		    $grid.masonry();
+		    console.log("second re-layout")
 		}, 1000);
 	    }
 	}
